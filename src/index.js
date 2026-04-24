@@ -303,6 +303,7 @@ function loadQaItem(item, element) {
     if(element) element.classList.add('active');
     currentQaItem = item;
     
+    document.getElementById('qa-meta-panel').style.display = 'block';
     document.getElementById('qa-stats-panel').style.display = 'block';
     document.getElementById('qa-verdict-panel').style.display = 'block';
     document.getElementById('qa-actions').style.display = 'block';
@@ -320,6 +321,10 @@ function loadQaItem(item, element) {
                 return;
             }
 
+            const meta = data.metadata || { name: "Unknown", address: "Unknown" };
+            document.getElementById('qa-bldg-name').innerText = `🏢 ${meta.name}`;
+            document.getElementById('qa-bldg-address').innerText = `📍 ${meta.address}`;
+            
             const stats = data.stats || {};
             document.getElementById('qa-stats-text').innerText = 
                 `Max NAP : ${stats.roof_Max_NAP || '?'}m\n` +
@@ -471,7 +476,7 @@ function renderComparison(origType, origId, origXml, slicedId, slicedXml) {
     helper.position.set(gridCenter, -0.1, 0);
     scene.add(helper);
 
-    // ADD INDICATOR LABELS
+    // INDICATOR LABELS
     // Scale them relative to the building size so they look consistent
     const labelScale = helperSize * 0.6; 
     const depthY = -helperSize * 0.25; // Push it clearly beneath the grid
@@ -527,6 +532,7 @@ function submitQaDecision(action) {
         toRemove.forEach(child => scene.remove(child));
         
         // Hide panels
+        document.getElementById('qa-meta-panel').style.display = 'none';
         document.getElementById('qa-stats-panel').style.display = 'none';
         document.getElementById('qa-verdict-panel').style.display = 'none';
         document.getElementById('qa-links-panel').style.display = 'none';
