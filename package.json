@@ -26,7 +26,8 @@
     "straight-skeleton": "1.1.0"
   },
   "scripts": {
-    "test": "c8 jest"
+    "test": "c8 jest",
+    "dev": "npx http-server -p 3001"
   },
    "c8": {
     "all": true,

@@ -30,7 +30,7 @@ class MultiBuildingPart extends BuildingPart {
   buildShape() {
     this.type = 'multipolygon';
     const innerMembers = this.way.querySelectorAll('member[role="inner"][type="way"]');
-    const outerMembers = this.way.querySelectorAll('member[role="outer"][type="way"]');
+    const outerMembers = this.way.querySelectorAll('member[role="outer"][type="way"], member[role="outline"][type="way"]');
     const shapes = [];
     const innerShapes = this.makeRings(innerMembers).map(ring => BuildingShapeUtils.createShape(ring, this.nodelist, this.augmentedNodelist));
     const closedOuterWays = this.makeRings(outerMembers);
@@ -48,8 +48,15 @@ class MultiBuildingPart extends BuildingPart {
 
   getWidth() {
     var xy = [[], []];
-    for (let i = 0; i < this.shape.length; i++){
-      const shape = this.shape[i];
+
+    // Failsafe: Ensure shape is built before attempting to read coordinates
+    if (!this.shape || this.shape.length === 0) {
+      this.shape = this.buildShape();
+    }
+
+    const shapesArray = Array.isArray(this.shape) ? this.shape : [this.shape];
+    for (let i = 0; i < shapesArray.length; i++){
+      const shape = shapesArray[i];
       const newXy = BuildingShapeUtils.combineCoordinates(shape);
       xy[0] = xy[0].concat(newXy[0]);
       xy[1] = xy[1].concat(newXy[1]);
