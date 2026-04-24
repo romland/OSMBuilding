@@ -94,6 +94,10 @@ Triggered when you click an item in the queue. It requires the raw OSM XML for b
   "originalXml": "<?xml version=\"1.0\"...><osm><way id=\"12345678\">...</way></osm>",
   "slicedXml": "<?xml version=\"1.0\"...><osm><relation id=\"999\">...</relation></osm>",
   "slicedId": "999", 
+  "metadata": {
+    "name": "Gasuniegebouw",
+    "address": "Concourslaan 17 Groningen"
+  },
   "stats": {
     "roof_Max_NAP": 45.2,
     "ground_NAP": 1.2,
