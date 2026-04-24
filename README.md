@@ -48,3 +48,71 @@ Examples:
 Specify the `osmApiUrl` parameter to use other OSM APIs. Examples:
  * [OpenHistoricalMap](https://beakerboy.github.io/OSMBuilding/?id=2826540&osmApiUrl=https://api.openhistoricalmap.org/api/0.6&type=relation)
  * [OpenGeofiction](https://beakerboy.github.io/OSMBuilding/?id=461819&osmApiUrl=https://opengeofiction.net/api/0.6&type=relation)
+
+Glad we survived the Google Maps URL curse. 
+
+Here is a clean, generic Markdown block you can append to the bottom of your `OSMBuilding` README. It explains the "why" and provides the exact API contract so anyone can build their own backend in Python, Go, Node, or whatever else to drive the UI.
+
+***
+
+## 🎯 QA Mode (Side-by-Side Comparison)
+
+This viewer includes a built-in QA (Quality Assurance) interface designed for developers writing automated OSM building generation/modification scripts. 
+
+Instead of manually loading files one by one, QA Mode allows you to connect the viewer to a local backend server. It fetches a queue of pending map edits, renders the **Original** building next to the **Modified** building, displays 3D engine impact stats (Vertices/Triangles), and allows you to quickly approve or reject the changes.
+
+To launch the viewer in QA Mode, append `?qa=true` to your local URL:
+`http://localhost:3001/?qa=true`
+
+### 🔌 The Backend Protocol
+
+By default, the QA UI expects a local server running on `http://localhost:3000`. To drive the UI, your backend simply needs to implement these three endpoints:
+
+#### 1. `GET /api/qa-queue`
+Returns the list of pending tasks you want to review.
+**Response:**
+```json
+{
+  "queue": [
+    {
+      "filename": "task_001.osc",
+      "city": "Amsterdam",
+      "type": "way",
+      "id": "12345678"
+    }
+  ]
+}
+```
+
+#### 2. `GET /api/qa-compare/:type/:id`
+Triggered when you click an item in the queue. It requires the raw OSM XML for both the original and modified models, plus any custom stats you want to display.
+**Response:**
+```json
+{
+  "originalXml": "<?xml version=\"1.0\"...><osm><way id=\"12345678\">...</way></osm>",
+  "slicedXml": "<?xml version=\"1.0\"...><osm><relation id=\"999\">...</relation></osm>",
+  "slicedId": "999", 
+  "stats": {
+    "roof_Max_NAP": 45.2,
+    "ground_NAP": 1.2,
+    "relative_Max": 44.0,
+    "pixels": 1050
+  },
+  "verdict": {
+    "text": "🔴 MASTERPIECE",
+    "isMasterpiece": true,
+    "reasons": ["High edge density", "Complex roof shape"]
+  }
+}
+```
+*(Note: The `slicedId` must match the root ID of the modified XML so the viewer knows which object to render).*
+
+#### 3. `POST /api/qa-decide`
+Triggered when you click **KEEP ORIGINAL** or **NUKE & REPLACE**. Your backend should handle deleting or moving the pending file accordingly.
+**Request Payload:**
+```json
+{
+  "filename": "task_001.osc",
+  "action": "keep" // or "nuke"
+}
+```

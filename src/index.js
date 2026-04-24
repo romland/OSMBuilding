@@ -285,7 +285,11 @@ function toggleWireframe() {
     isWireframe = !isWireframe;
     scene.traverse((child) => {
         if (child.isMesh && child.material) {
-            child.material.wireframe = isWireframe;
+            if (Array.isArray(child.material)) {
+                child.material.forEach(m => m.wireframe = isWireframe);
+            } else {
+                child.material.wireframe = isWireframe;
+            }
         }
     });
 }
@@ -335,6 +339,25 @@ function loadQaItem(item, element) {
         });
 }
 
+function getGeometryStats(meshes) {
+    let vertices = 0;
+    let triangles = 0;
+    
+    meshes.forEach(m => {
+        if (m.isMesh && m.geometry && m.geometry.attributes.position) {
+            vertices += m.geometry.attributes.position.count;
+            // If it's an indexed geometry, count the index buffer. Otherwise, count the raw vertices.
+            if (m.geometry.index) {
+                triangles += m.geometry.index.count / 3;
+            } else {
+                triangles += m.geometry.attributes.position.count / 3;
+            }
+        }
+    });
+    
+    return { vertices, triangles: Math.floor(triangles) };
+}
+
 function renderComparison(origType, origId, origXml, slicedId, slicedXml) {
     // 1. Wipe Scene Clean (Array-safe dispose)
     const toRemove = [];
@@ -353,6 +376,24 @@ function renderComparison(origType, origId, origXml, slicedId, slicedXml) {
 
     // 2. Render Original Model (Left) - NATIVE COLORS ONLY
     const origBuilding = new Building(origId, origXml);
+    const [lng, lat] = origBuilding.home;
+
+    document.getElementById('qa-links-panel').style.display = 'block';
+    
+    const coordString = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+    const copyBtn = document.getElementById('link-copy-coords');
+    copyBtn.innerText = `📋 Copy: ${coordString}`;
+    copyBtn.onclick = () => {
+        navigator.clipboard.writeText(coordString);
+        copyBtn.innerText = '✅ Copied!';
+        setTimeout(() => copyBtn.innerText = `📋 Copy: ${coordString}`, 2000);
+    };
+
+    document.getElementById('link-gmaps').href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    document.getElementById('link-g3d').href = `https://js-3d-area-explorer-demo-dev-t6a6o7lkja-uc.a.run.app/#location.coordinates.lat=${lat}&location.coordinates.lng=${lng}&poi.density=50&poi.searchRadius=100`;
+    document.getElementById('link-osm').href = `https://www.openstreetmap.org/#map=21/${lat}/${lng}`;
+    document.getElementById('link-esri').href = `https://livingatlas.arcgis.com/wayback/#mapCenter=${lng}%2C${lat}%2C19&mode=explore`;
+
     const origMeshes = origBuilding.render();
     origMeshes.forEach(m => { 
         if (m.isObject3D) {
@@ -366,6 +407,15 @@ function renderComparison(origType, origId, origXml, slicedId, slicedXml) {
     const slicedBuilding = new Building(slicedId, slicedXml);
     const slicedMeshes = slicedBuilding.render();
     
+    // Impact stats
+    const origStats = getGeometryStats(origMeshes);
+    const newStats = getGeometryStats(slicedMeshes);
+    
+    document.getElementById('qa-geom-text').innerText = 
+        `         ORIGINAL   | SLICED\n` +
+        `Verts :  ${String(origStats.vertices).padEnd(10)} | ${newStats.vertices}\n` +
+        `Tris  :  ${String(origStats.triangles).padEnd(10)} | ${newStats.triangles}`;
+
     let helperSize = 100;
     if (!box.isEmpty()) {
         const size = new Vector3();
@@ -421,6 +471,7 @@ function submitQaDecision(action) {
         // Hide panels
         document.getElementById('qa-stats-panel').style.display = 'none';
         document.getElementById('qa-verdict-panel').style.display = 'none';
+        document.getElementById('qa-links-panel').style.display = 'none';
         document.getElementById('qa-actions').style.display = 'none';
         
         const countEl = document.getElementById('qa-q-count');
