@@ -322,8 +322,8 @@ function loadQaItem(item, element) {
     document.getElementById('qa-stats-text').innerText = 'Scanning Data...';
     document.getElementById('qa-verdict-text').innerText = '';
 
-    // Hit the engine to generate the slice and evaluation in real-time
-    fetch(`http://localhost:3000/api/qa-compare/${item.type}/${item.id}`)
+    // Pass the filename so the backend reads the exact .osc patch from disk!
+    fetch(`http://localhost:3000/api/qa-compare/${item.type}/${item.id}?filename=${item.filename}`)
         .then(r => r.json())
         .then(data => {
             // --- NEW: Catch backend errors passed gracefully as JSON ---
