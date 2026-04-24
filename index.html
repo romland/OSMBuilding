@@ -79,6 +79,7 @@
             <strong>🔗 View in Reality</strong>
             <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
                 <a id="link-copy-coords" href="javascript:void(0)" style="color: #2ecc71; text-decoration: none; font-size: 13px; font-weight: bold;">📋 Copy Coordinates</a>
+                <a id="link-view-source" href="javascript:void(0)" style="color: #f39c12; text-decoration: none; font-size: 13px; font-weight: bold;">📄 View XML Source</a>
                 <div style="border-top: 1px dashed #444; margin: 2px 0;"></div>
                 <a id="link-gmaps" target="_blank" style="color: #3498db; text-decoration: none; font-size: 13px;">🗺️ Google Maps</a>
                 <a id="link-g3d" target="_blank" style="color: #3498db; text-decoration: none; font-size: 13px;">🗺️ Google 3D</a>
@@ -104,6 +105,23 @@
             </code>
         </div>
     </div>
+
+    <div id="qa-source-modal" style="display:none; position:fixed; inset:20px; background:rgba(20, 20, 20, 0.95); z-index:2000; flex-direction:column; border: 1px solid #444; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#333; padding:10px 20px; border-radius:8px 8px 0 0;">
+            <h3 style="margin:0; color:#fff; font-family: sans-serif;">XML Source Comparison</h3>
+            <button id="btn-close-source" style="background:#e74c3c; border:none; color:#fff; padding:6px 12px; cursor:pointer; border-radius:4px; font-weight:bold;">Close (ESC)</button>
+        </div>
+        <div style="display:flex; flex:1; gap:10px; padding:10px; overflow:hidden;">
+            <div style="flex:1; display:flex; flex-direction:column;">
+                <strong style="color:#aaa; font-family: sans-serif; padding-bottom: 5px;">Original XML</strong>
+                <textarea id="qa-source-orig" readonly style="flex:1; background:#111; color:#a6e22e; font-family:monospace; font-size: 12px; border:1px solid #444; padding:10px; white-space:pre; overflow:auto; resize:none;"></textarea>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column;">
+                <strong style="color:#2ecc71; font-family: sans-serif; padding-bottom: 5px;">Sliced XML</strong>
+                <textarea id="qa-source-sliced" readonly style="flex:1; background:#111; color:#a6e22e; font-family:monospace; font-size: 12px; border:1px solid #444; padding:10px; white-space:pre; overflow:auto; resize:none;"></textarea>
+            </div>
+        </div>
+    </div>    
 </body>
 
 </html>

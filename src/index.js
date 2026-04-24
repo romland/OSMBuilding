@@ -41,6 +41,8 @@ var isQaMode = false;
 var currentQaItem = null;
 var qaMeshes = []; 
 var isWireframe = false;
+var currentOrigXml = '';
+var currentSlicedXml = '';
 
 async function getFileFromForm() {
   return new Promise(resolve => {
@@ -279,9 +281,19 @@ function initQA() {
     document.getElementById('btn-keep').onclick = () => submitQaDecision('keep');
     document.getElementById('btn-nuke').onclick = () => submitQaDecision('nuke');
     
+    document.getElementById('link-view-source').onclick = () => {
+        document.getElementById('qa-source-orig').value = currentOrigXml;
+        document.getElementById('qa-source-sliced').value = currentSlicedXml;
+        document.getElementById('qa-source-modal').style.display = 'flex';
+    };
+
+    const closeModal = () => document.getElementById('qa-source-modal').style.display = 'none';
+    document.getElementById('btn-close-source').onclick = closeModal;
+
     // 3. Hotkey 'W' for wireframe
     window.addEventListener('keydown', (e) => {
         if (e.key === 'w' || e.key === 'W') toggleWireframe();
+        if (e.key === 'Escape') closeModal();
     });
 }
 
@@ -320,6 +332,9 @@ function loadQaItem(item, element) {
                 document.getElementById('qa-verdict-text').innerText = "Failed to load comparison.";
                 return;
             }
+
+            currentOrigXml = data.originalXml || '';
+            currentSlicedXml = data.slicedXml || '';
 
             const meta = data.metadata || { name: "Unknown", address: "Unknown" };
             document.getElementById('qa-bldg-name').innerText = `🏢 ${meta.name}`;
