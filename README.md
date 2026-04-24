@@ -59,6 +59,8 @@ Here is a clean, generic Markdown block you can append to the bottom of your `OS
 
 This viewer includes a built-in QA (Quality Assurance) interface designed for developers writing automated OSM building generation/modification scripts. 
 
+<img src=".github/sliced.png">
+
 Instead of manually loading files one by one, QA Mode allows you to connect the viewer to a local backend server. It fetches a queue of pending map edits, renders the **Original** building next to the **Modified** building, displays 3D engine impact stats (Vertices/Triangles), and allows you to quickly approve or reject the changes.
 
 To launch the viewer in QA Mode, append `?qa=true` to your local URL:
