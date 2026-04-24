@@ -49,15 +49,10 @@ Specify the `osmApiUrl` parameter to use other OSM APIs. Examples:
  * [OpenHistoricalMap](https://beakerboy.github.io/OSMBuilding/?id=2826540&osmApiUrl=https://api.openhistoricalmap.org/api/0.6&type=relation)
  * [OpenGeofiction](https://beakerboy.github.io/OSMBuilding/?id=461819&osmApiUrl=https://opengeofiction.net/api/0.6&type=relation)
 
-Glad we survived the Google Maps URL curse. 
-
-Here is a clean, generic Markdown block you can append to the bottom of your `OSMBuilding` README. It explains the "why" and provides the exact API contract so anyone can build their own backend in Python, Go, Node, or whatever else to drive the UI.
-
-***
 
 ## 🎯 QA Mode (Side-by-Side Comparison)
 
-This viewer includes a built-in QA (Quality Assurance) interface designed for developers writing automated OSM building generation/modification scripts. 
+This version of the viewer includes a built-in QA (Quality Assurance) interface designed for developers writing automated OSM building generation/modification scripts. 
 
 <img src=".github/sliced.png">
 
