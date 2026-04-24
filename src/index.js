@@ -9,7 +9,11 @@ import {
   WireframeGeometry,
   Box3,
   Vector3,
-  MOUSE
+  MOUSE,
+  CanvasTexture,
+  SpriteMaterial,
+  Sprite,
+  Sphere
 } from 'three';
 import {MapControls} from 'https://unpkg.com/three/examples/jsm/controls/MapControls.js';
 import {Building} from './building.js';
@@ -358,10 +362,36 @@ function getGeometryStats(meshes) {
     return { vertices, triangles: Math.floor(triangles) };
 }
 
+function create3DLabel(text, colorHex) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; 
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    
+    // Draw bold text with a thick black outline for visibility against any sky/building
+    ctx.font = 'bold 64px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = '#000000';
+    ctx.strokeText(text, 256, 64);
+    ctx.fillStyle = colorHex;
+    ctx.fillText(text, 256, 64);
+    
+    const texture = new CanvasTexture(canvas);
+    // depthTest: false ensures the label renders ON TOP of the buildings, never clipping inside them
+    const mat = new SpriteMaterial({ map: texture, depthTest: false });
+    const sprite = new Sprite(mat);
+    sprite.renderOrder = 999;
+    return sprite;
+}
+
 function renderComparison(origType, origId, origXml, slicedId, slicedXml) {
-    // 1. Wipe Scene Clean (Array-safe dispose)
+    // 1. Wipe Scene Clean (Array-safe dispose + Sprite cleanup)
     const toRemove = [];
-    scene.traverse(child => { if (child.isMesh || child.type === 'GridHelper') toRemove.push(child); });
+    scene.traverse(child => { 
+        if (child.isMesh || child.isSprite || child.type === 'GridHelper') toRemove.push(child); 
+    });
     toRemove.forEach(child => {
         if(child.geometry) child.geometry.dispose();
         if(child.material) {
@@ -435,24 +465,52 @@ function renderComparison(origType, origId, origXml, slicedId, slicedXml) {
         }
     });
 
-    // 4. Environment & Camera Synchronization
+    // 4. Environment, Labels & Camera Synchronization
     const gridCenter = offset / 2;
     const helper = new GridHelper(offset * 2.5, Math.max(10, Math.floor(offset / 5)));
     helper.position.set(gridCenter, -0.1, 0);
     scene.add(helper);
 
-    const camDist = helperSize * 2.5;
-    camera.position.set(gridCenter, camDist * 0.8, camDist * 1.2);
+    // ADD INDICATOR LABELS
+    // Scale them relative to the building size so they look consistent
+    const labelScale = helperSize * 0.6; 
+    const depthY = -helperSize * 0.25; // Push it clearly beneath the grid
+    
+    const origLabel = create3DLabel("ORIGINAL", "#aaaaaa");
+    origLabel.position.set(0, depthY, 0); 
+    origLabel.scale.set(labelScale, labelScale * 0.25, 1);
+    scene.add(origLabel);
+
+    const slicedLabel = create3DLabel("SLICED", "#2ecc71");
+    slicedLabel.position.set(offset, depthY, 0); 
+    slicedLabel.scale.set(labelScale, labelScale * 0.25, 1);
+    scene.add(slicedLabel);
+
+    // CAMERA FRAMING MATH
+    const sphere = new Sphere();
+    box.getBoundingSphere(sphere); // Get the absolute bounds of BOTH models combined
+    
+    // Calculate exact distance needed to fit the sphere inside the camera Field of View
+    const fov = camera.fov * (Math.PI / 180);
+    const cameraDist = Math.abs(sphere.radius / Math.sin(fov / 2)) * 1.2; // Add 20% padding
+    
+    // Position camera diagonally in front and above the exact center of the combined scene
+    camera.position.set(
+        sphere.center.x, 
+        sphere.center.y + cameraDist * 0.4, 
+        sphere.center.z + cameraDist * 0.8
+    );
     if (controls) {
-        controls.target.set(gridCenter, helperSize * 0.1, 0);
+        controls.target.copy(sphere.center);
         controls.update();
     }
     
     if (isWireframe) {
-        isWireframe = false; // Reset state so toggle works cleanly
+        isWireframe = false;
         toggleWireframe();
     }
 }
+
 
 function submitQaDecision(action) {
     if (!currentQaItem) return;
