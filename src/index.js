@@ -336,6 +336,15 @@ function loadQaItem(item, element) {
             currentOrigXml = data.originalXml || '';
             currentSlicedXml = data.slicedXml || '';
 
+            const fullId = `${item.type}/${item.id}`;
+            document.getElementById('qa-bldg-id').innerText = fullId;
+            const copyIdBtn = document.getElementById('btn-copy-id');
+            copyIdBtn.onclick = () => {
+                navigator.clipboard.writeText(fullId);
+                copyIdBtn.innerText = '✅';
+                setTimeout(() => copyIdBtn.innerText = '📋', 1500);
+            };
+
             const meta = data.metadata || { name: "Unknown", address: "Unknown" };
             document.getElementById('qa-bldg-name').innerText = `🏢 ${meta.name}`;
             document.getElementById('qa-bldg-address').innerText = `📍 ${meta.address}`;
