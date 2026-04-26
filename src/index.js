@@ -13,7 +13,9 @@ import {
   CanvasTexture,
   SpriteMaterial,
   Sprite,
-  Sphere
+  Sphere,
+  MeshBasicMaterial,
+  AdditiveBlending
 } from 'three';
 import {MapControls} from 'https://unpkg.com/three/examples/jsm/controls/MapControls.js';
 import {Building} from './building.js';
@@ -456,6 +458,25 @@ function renderComparison(origType, origId, origXml, slicedId, slicedXml) {
     const origMeshes = origBuilding.render();
     origMeshes.forEach(m => { 
         if (m.isObject3D) {
+            // HOLOGRAM HACK: Magic color -- turn the red chalk outline into a glowing UI element
+            if (m.isMesh && m.material) {
+                const mats = Array.isArray(m.material) ? m.material : [m.material];
+                mats.forEach((mat, idx) => {
+                    if (mat.color && mat.color.getHexString() === 'ff0055') {
+                        const neonMat = new MeshBasicMaterial({
+                            color: 0xff0055,
+                            transparent: true,
+                            opacity: 0.6,
+                            blending: AdditiveBlending,
+                            depthWrite: false
+                        });
+                        if (Array.isArray(m.material)) m.material[idx] = neonMat;
+                        else m.material = neonMat;
+                        m.position.y += 0.2; // Hover slightly above ground to prevent z-fighting
+                    }
+                });
+            }
+
             scene.add(m); 
             box.expandByObject(m); 
             qaMeshes.push(m);
