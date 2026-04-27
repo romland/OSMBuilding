@@ -365,6 +365,8 @@ function loadQaItem(item, element) {
                 <ul style="padding-left:15px; margin:8px 0; color:#ddd;">
                     ${v.reasons.map(r => `<li>${r}</li>`).join('')}
                 </ul>`;
+          document.getElementById('link-osm').href = `https://www.openstreetmap.org/${fullId}`;
+
 
             renderComparison(item.type, item.id, data.originalXml, data.slicedId, data.slicedXml);
         })
@@ -452,7 +454,7 @@ function renderComparison(origType, origId, origXml, slicedId, slicedXml) {
 
     document.getElementById('link-gmaps').href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     document.getElementById('link-g3d').href = `https://js-3d-area-explorer-demo-dev-t6a6o7lkja-uc.a.run.app/#location.coordinates.lat=${lat}&location.coordinates.lng=${lng}&poi.density=50&poi.searchRadius=100`;
-    document.getElementById('link-osm').href = `https://www.openstreetmap.org/#map=21/${lat}/${lng}`;
+    // document.getElementById('link-osm').href = `https://www.openstreetmap.org/#map=21/${lat}/${lng}`;
     document.getElementById('link-esri').href = `https://livingatlas.arcgis.com/wayback/#mapCenter=${lng}%2C${lat}%2C19&mode=explore`;
 
     const origMeshes = origBuilding.render();
