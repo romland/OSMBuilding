@@ -289,6 +289,36 @@ function initQA() {
         document.getElementById('qa-source-modal').style.display = 'flex';
     };
 
+    document.getElementById('btn-golden').onclick = () => {
+        if (!currentQaItem) return;
+        
+        const bldgName = document.getElementById('qa-bldg-name').innerText.replace('🏢 ', '');
+        const btn = document.getElementById('btn-golden');
+        const originalText = btn.innerHTML;
+        
+        btn.innerText = "⏳ SAVING...";
+        
+        fetch('http://localhost:3000/api/qa-golden', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                type: currentQaItem.type, 
+                id: currentQaItem.id,
+                name: bldgName
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) throw new Error(data.error);
+            btn.innerText = "✅ SNAPSHOT SAVED";
+            setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+        })
+        .catch(err => {
+            alert("Failed to save Golden Snapshot: " + err.message);
+            btn.innerHTML = originalText;
+        });
+    };    
+
     const closeModal = () => document.getElementById('qa-source-modal').style.display = 'none';
     document.getElementById('btn-close-source').onclick = closeModal;
 
@@ -328,7 +358,7 @@ function loadQaItem(item, element) {
     fetch(`http://localhost:3000/api/qa-compare/${item.type}/${item.id}?filename=${item.filename}`)
         .then(r => r.json())
         .then(data => {
-            // --- NEW: Catch backend errors passed gracefully as JSON ---
+            // Catch backend errors passed gracefully as JSON ---
             if (data.error) {
                 document.getElementById('qa-stats-text').innerText = `❌ Error: ${data.error}`;
                 document.getElementById('qa-verdict-text').innerText = "Failed to load comparison.";
@@ -365,9 +395,27 @@ function loadQaItem(item, element) {
                 <ul style="padding-left:15px; margin:8px 0; color:#ddd;">
                     ${v.reasons.map(r => `<li>${r}</li>`).join('')}
                 </ul>`;
-          document.getElementById('link-osm').href = `https://www.openstreetmap.org/${fullId}`;
 
-
+            // Handle Golden Status rendering
+            const gStatusEl = document.getElementById('qa-golden-status');
+            if (data.goldenStatus && data.goldenStatus.exists) {
+                gStatusEl.style.display = 'block';
+                if (data.goldenStatus.passed) {
+                    gStatusEl.style.background = 'rgba(46, 204, 113, 0.15)';
+                    gStatusEl.style.border = '1px solid #2ecc71';
+                    gStatusEl.innerHTML = '🏆 <strong>GOLDEN MATCH</strong><br><span style="color:#aaa; font-size: 11px;">Engine output perfectly matches locked snapshot.</span>';
+                } else {
+                    gStatusEl.style.background = 'rgba(231, 76, 60, 0.15)';
+                    gStatusEl.style.border = '1px solid #e74c3c';
+                    gStatusEl.innerHTML = '⚠️ <strong style="color:#ff6b6b;">GOLDEN REGRESSION!</strong><br><ul style="padding-left:15px; margin:6px 0 0 0; color:#ff9999;">' + 
+                        data.goldenStatus.errors.map(e => `<li>${e}</li>`).join('') + 
+                        '</ul>';
+                }
+            } else {
+                gStatusEl.style.display = 'none';
+            }
+            
+            document.getElementById('link-osm').href = `https://www.openstreetmap.org/${fullId}`;
             renderComparison(item.type, item.id, data.originalXml, data.slicedId, data.slicedXml);
         })
         .catch(e => {
@@ -394,6 +442,26 @@ function getGeometryStats(meshes) {
     
     return { vertices, triangles: Math.floor(triangles) };
 }
+
+function getXmlStats(xmlString) {
+    if (!xmlString) return { nodes: 0, ways: 0, rels: 0, parts: 0, sizeKb: 0 };
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlString, "application/xml");
+    
+    const nodes = doc.getElementsByTagName("node").length;
+    const ways = doc.getElementsByTagName("way").length;
+    const rels = doc.getElementsByTagName("relation").length;
+    
+    let parts = 0;
+    const tags = doc.getElementsByTagName("tag");
+    for (let i = 0; i < tags.length; i++) {
+        if (tags[i].getAttribute("k") === "building:part") parts++;
+    }
+    
+    const sizeKb = (xmlString.length / 1024).toFixed(1);
+    return { nodes, ways, rels, parts, sizeKb };
+}
+
 
 function create3DLabel(text, colorHex) {
     const canvas = document.createElement('canvas');
@@ -493,10 +561,19 @@ function renderComparison(origType, origId, origXml, slicedId, slicedXml) {
     const origStats = getGeometryStats(origMeshes);
     const newStats = getGeometryStats(slicedMeshes);
     
+    const origXmlStats = getXmlStats(origXml);
+    const slicedXmlStats = getXmlStats(slicedXml);    
+
     document.getElementById('qa-geom-text').innerText = 
-        `         ORIGINAL   | SLICED\n` +
-        `Verts :  ${String(origStats.vertices).padEnd(10)} | ${newStats.vertices}\n` +
-        `Tris  :  ${String(origStats.triangles).padEnd(10)} | ${newStats.triangles}`;
+        `              ORIGINAL   | SLICED\n` +
+        `Mesh Verts :  ${String(origStats.vertices).padEnd(10)} | ${newStats.vertices}\n` +
+        `Mesh Tris  :  ${String(origStats.triangles).padEnd(10)} | ${newStats.triangles}\n` +
+        `----------------------------------\n` +
+        `XML Nodes  :  ${String(origXmlStats.nodes).padEnd(10)} | ${slicedXmlStats.nodes}\n` +
+        `XML Ways   :  ${String(origXmlStats.ways).padEnd(10)} | ${slicedXmlStats.ways}\n` +
+        `XML Rels   :  ${String(origXmlStats.rels).padEnd(10)} | ${slicedXmlStats.rels}\n` +
+        `XML Parts  :  ${String(origXmlStats.parts).padEnd(10)} | ${slicedXmlStats.parts}\n` +
+        `Payload    :  ${String(origXmlStats.sizeKb + 'kb').padEnd(10)} | ${slicedXmlStats.sizeKb}kb`;
 
     let helperSize = 100;
     if (!box.isEmpty()) {

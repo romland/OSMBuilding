@@ -60,6 +60,8 @@
         <div class="qa-panel" id="qa-verdict-panel" style="display:none;">
             <strong>⚖️ Verdict Scoreboard</strong>
             <div id="qa-verdict-text" style="font-size: 13px; margin-top: 8px;"></div>
+            
+            <div id="qa-golden-status" style="margin-top: 10px; padding: 8px; border-radius: 4px; display: none; font-size: 13px; line-height: 1.4;"></div>
         </div>
         <div class="qa-panel" id="qa-meta-panel" style="display:none; background: #2c3e50; border-left: 4px solid #3498db;">
             <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
@@ -95,6 +97,8 @@
         <div class="qa-panel" id="qa-actions" style="display:none; background: none; padding: 0;">
             <button class="qa-btn btn-keep" id="btn-keep">🚫 KEEP ORIGINAL<br><small style="font-weight:normal">(Trashes the generated .osc)</small></button>
             <button class="qa-btn btn-nuke" id="btn-nuke">✅ NUKE & REPLACE<br><small style="font-weight:normal">(Approves the .osc for live)</small></button>
+            <div style="border-top: 1px dashed #444; margin: 8px 0;"></div>
+            <button class="qa-btn" id="btn-golden" style="background: #f39c12; color: #111;">🏆 MARK GOLDEN<br><small style="font-weight:normal">(Locks structure in Regression Test)</small></button>
         </div>
         <div style="font-size: 12px; color: #888; margin-top: 10px; line-height: 1.6;">
             <strong>Hotkey 'W'</strong> : Toggle Wireframe Mode<br>
