@@ -369,12 +369,13 @@ function loadQaItem(item, element) {
             currentSlicedXml = data.slicedXml || '';
 
             const fullId = `${item.type}/${item.id}`;
-            document.getElementById('qa-bldg-id').innerText = fullId;
             const copyIdBtn = document.getElementById('btn-copy-id');
+            copyIdBtn.innerText = `📋 Copy ID: ${fullId}`;
             copyIdBtn.onclick = () => {
                 navigator.clipboard.writeText(fullId);
-                copyIdBtn.innerText = '✅';
-                setTimeout(() => copyIdBtn.innerText = '📋', 1500);
+                const oldInner = copyIdBtn.innerText;
+                copyIdBtn.innerText = '✅ Copied!';
+                setTimeout(() => copyIdBtn.innerText = oldInner, 1500);
             };
 
             const meta = data.metadata || { name: "Unknown", address: "Unknown" };
@@ -415,6 +416,8 @@ function loadQaItem(item, element) {
                 gStatusEl.style.display = 'none';
             }
             
+            currentQaItem.goldenStatus = data.goldenStatus;
+            currentQaItem.serverStats = data.serverStats;
             document.getElementById('link-osm').href = `https://www.openstreetmap.org/${fullId}`;
             renderComparison(item.type, item.id, data.originalXml, data.slicedId, data.slicedXml);
         })
@@ -423,45 +426,6 @@ function loadQaItem(item, element) {
             document.getElementById('qa-verdict-text').innerText = e.message;
         });
 }
-
-function getGeometryStats(meshes) {
-    let vertices = 0;
-    let triangles = 0;
-    
-    meshes.forEach(m => {
-        if (m.isMesh && m.geometry && m.geometry.attributes.position) {
-            vertices += m.geometry.attributes.position.count;
-            // If it's an indexed geometry, count the index buffer. Otherwise, count the raw vertices.
-            if (m.geometry.index) {
-                triangles += m.geometry.index.count / 3;
-            } else {
-                triangles += m.geometry.attributes.position.count / 3;
-            }
-        }
-    });
-    
-    return { vertices, triangles: Math.floor(triangles) };
-}
-
-function getXmlStats(xmlString) {
-    if (!xmlString) return { nodes: 0, ways: 0, rels: 0, parts: 0, sizeKb: 0 };
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xmlString, "application/xml");
-    
-    const nodes = doc.getElementsByTagName("node").length;
-    const ways = doc.getElementsByTagName("way").length;
-    const rels = doc.getElementsByTagName("relation").length;
-    
-    let parts = 0;
-    const tags = doc.getElementsByTagName("tag");
-    for (let i = 0; i < tags.length; i++) {
-        if (tags[i].getAttribute("k") === "building:part") parts++;
-    }
-    
-    const sizeKb = (xmlString.length / 1024).toFixed(1);
-    return { nodes, ways, rels, parts, sizeKb };
-}
-
 
 function create3DLabel(text, colorHex) {
     const canvas = document.createElement('canvas');
@@ -557,23 +521,37 @@ function renderComparison(origType, origId, origXml, slicedId, slicedXml) {
     const slicedBuilding = new Building(slicedId, slicedXml);
     const slicedMeshes = slicedBuilding.render();
     
-    // Impact stats
-    const origStats = getGeometryStats(origMeshes);
-    const newStats = getGeometryStats(slicedMeshes);
-    
-    const origXmlStats = getXmlStats(origXml);
-    const slicedXmlStats = getXmlStats(slicedXml);    
+    // Read the absolute truth from the server payload
+    const oStats = currentQaItem.serverStats.orig;
+    const sStats = currentQaItem.serverStats.sliced;
+
+    // Default 2-column layout
+    let statsHeader = `              ORIGINAL   | SLICED\n`;
+    let sVerts = `Mesh Verts :  ${String(oStats.meshVerts).padEnd(10)} | ${sStats.meshVerts}\n`;
+    let sTris  = `Mesh Tris  :  ${String(oStats.meshTris).padEnd(10)} | ${sStats.meshTris}\n`;
+    let sSep   = `----------------------------------\n`;
+    let sNodes = `XML Nodes  :  ${String(oStats.nodes).padEnd(10)} | ${sStats.nodes}\n`;
+    let sWays  = `XML Ways   :  ${String(oStats.ways).padEnd(10)} | ${sStats.ways}\n`;
+    let sRels  = `XML Rels   :  ${String(oStats.rels).padEnd(10)} | ${sStats.rels}\n`;
+    let sParts = `XML Parts  :  ${String(oStats.parts).padEnd(10)} | ${sStats.parts}\n`;
+    let sSize  = `Payload    :  ${String(oStats.sizeKb + 'kb').padEnd(10)} | ${sStats.sizeKb}kb`;
+
+    // Upgrade to 3-column layout if Golden Stats exist
+    if (currentQaItem && currentQaItem.goldenStatus && currentQaItem.goldenStatus.stats) {
+        const g = currentQaItem.goldenStatus.stats;
+        statsHeader = `              ORIGINAL   | GOLDEN   | SLICED\n`;
+        sVerts = `Mesh Verts :  ${String(oStats.meshVerts).padEnd(10)} | ${String(g.meshVerts || '?').padEnd(8)} | ${sStats.meshVerts}\n`;
+        sTris  = `Mesh Tris  :  ${String(oStats.meshTris).padEnd(10)} | ${String(g.meshTris || '?').padEnd(8)} | ${sStats.meshTris}\n`;
+        sSep   = `------------------------------------------\n`;
+        sNodes = `XML Nodes  :  ${String(oStats.nodes).padEnd(10)} | ${String(g.nodes).padEnd(8)} | ${sStats.nodes}\n`;
+        sWays  = `XML Ways   :  ${String(oStats.ways).padEnd(10)} | ${String(g.ways).padEnd(8)} | ${sStats.ways}\n`;
+        sRels  = `XML Rels   :  ${String(oStats.rels).padEnd(10)} | ${String(g.rels).padEnd(8)} | ${sStats.rels}\n`;
+        sParts = `XML Parts  :  ${String(oStats.parts).padEnd(10)} | ${String(g.parts).padEnd(8)} | ${sStats.parts}\n`;
+        sSize  = `Payload kb :  ${String(oStats.sizeKb).padEnd(10)} | ${String(g.sizeKb).padEnd(8)} | ${sStats.sizeKb}`;
+    }
 
     document.getElementById('qa-geom-text').innerText = 
-        `              ORIGINAL   | SLICED\n` +
-        `Mesh Verts :  ${String(origStats.vertices).padEnd(10)} | ${newStats.vertices}\n` +
-        `Mesh Tris  :  ${String(origStats.triangles).padEnd(10)} | ${newStats.triangles}\n` +
-        `----------------------------------\n` +
-        `XML Nodes  :  ${String(origXmlStats.nodes).padEnd(10)} | ${slicedXmlStats.nodes}\n` +
-        `XML Ways   :  ${String(origXmlStats.ways).padEnd(10)} | ${slicedXmlStats.ways}\n` +
-        `XML Rels   :  ${String(origXmlStats.rels).padEnd(10)} | ${slicedXmlStats.rels}\n` +
-        `XML Parts  :  ${String(origXmlStats.parts).padEnd(10)} | ${slicedXmlStats.parts}\n` +
-        `Payload    :  ${String(origXmlStats.sizeKb + 'kb').padEnd(10)} | ${slicedXmlStats.sizeKb}kb`;
+        statsHeader + sVerts + sTris + sSep + sNodes + sWays + sRels + sParts + sSize;
 
     let helperSize = 100;
     if (!box.isEmpty()) {
