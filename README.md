@@ -1,3 +1,6 @@
+## Note that my (romland) changes are at the QA branch here:
+https://github.com/romland/OSMBuilding/tree/appearent-qa-mode
+
 ![Badge](https://github.com/Beakerboy/OSMBuilding/actions/workflows/main.yml/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/Beakerboy/OSMBuilding/badge.svg?branch=main)](https://coveralls.io/github/Beakerboy/OSMBuilding?branch=main)
 
